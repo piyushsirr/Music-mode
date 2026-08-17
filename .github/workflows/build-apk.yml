@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - master
 
 jobs:
   build:
@@ -12,22 +13,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Check project files
+        run: |
+          echo "=== Project files ==="
+          find . -maxdepth 3 -type f | sort | head -300
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build application
         run: npm run build
 
-      - name: Package Android APK
+      - name: Find APK
         run: |
-          echo "Checking project structure..."
-          find . -maxdepth 3 -type f | sort | head -200
+          echo "=== Searching for APK ==="
+          find . -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Music-mode-APK
+          path: |
+            **/*.apk
+          if-no-files-found: error
