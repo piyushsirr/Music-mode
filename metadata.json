@@ -1,0 +1,8 @@
+{
+  "name": "Spotify Clone",
+  "description": "A high-fidelity Spotify-style music streaming application with dynamic album art color extraction gradient background, IP-based preference persistence, real-time audio visualizer, seamless cross-fading, and synced lyrics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
