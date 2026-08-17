@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build APK
+    name: Build Music Mode APK
     runs-on: ubuntu-latest
 
     steps:
@@ -19,28 +19,73 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Check project files
-        run: |
-          echo "=== Project files ==="
-          find . -maxdepth 3 -type f | sort | head -300
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
-      - name: Install dependencies
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install project dependencies
         run: npm install
 
-      - name: Build application
+      - name: Build web application
         run: npm run build
+
+      - name: Detect web output directory
+        id: webdir
+        shell: bash
+        run: |
+          if [ -f "dist/index.html" ]; then
+            echo "dir=dist" >> "$GITHUB_OUTPUT"
+          elif [ -f "build/index.html" ]; then
+            echo "dir=build" >> "$GITHUB_OUTPUT"
+          elif [ -f "www/index.html" ]; then
+            echo "dir=www" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: Could not find the built web application."
+            echo "Searching for index.html:"
+            find . -type f -name "index.html" -not -path "./node_modules/*" -print
+            exit 1
+          fi
+
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Initialize Capacitor
+        run: |
+          npx cap init "Music Mode" "com.piyushsirr.musicmode" --web-dir "${{ steps.webdir.outputs.dir }}"
+
+      - name: Add Android platform
+        run: |
+          npx cap add android
+
+      - name: Sync web application with Android
+        run: |
+          npx cap sync android
+
+      - name: Make Gradle executable
+        run: |
+          chmod +x android/gradlew
+
+      - name: Build Android APK
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug --no-daemon
 
       - name: Find APK
         run: |
-          echo "=== Searching for APK ==="
-          find . -type f -name "*.apk" -print
+          echo "=== APK files ==="
+          find android -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Music-mode-APK
-          path: |
-            **/*.apk
+          name: Music-Mode-Android-APK
+          path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
